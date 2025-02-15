@@ -28,7 +28,10 @@ def start(client, message):
          InlineKeyboardButton("\U0001F4F2 تيك توك", callback_data="tiktok")],
         [InlineKeyboardButton("\U0001F4FB فيسبوك", callback_data="facebook"),
          InlineKeyboardButton("\U0001F426 تويتر", callback_data="twitter")],
-        [InlineKeyboardButton("\U0001F4FC فيميو", callback_data="vimeo")]
+        [InlineKeyboardButton("\U0001F4FC فيميو", callback_data="vimeo"),
+         InlineKeyboardButton("\U0001F4E2 ريديت", callback_data="reddit")],
+        [InlineKeyboardButton("\U0001F39E ديلي موشن", callback_data="dailymotion"),
+         InlineKeyboardButton("\U0001F4F9 انستغرام", callback_data="instagram")]
     ])
 
     message.reply_text(
@@ -39,7 +42,7 @@ def start(client, message):
     )
 
 # استقبال اختيار المستخدم
-@bot.on_callback_query(filters.regex("^(image|music|file|tiktok|facebook|twitter|vimeo)$"))
+@bot.on_callback_query(filters.regex("^(image|music|file|tiktok|facebook|twitter|vimeo|reddit|dailymotion|instagram)$"))
 def query_handler(client, query):
     category = query.data
     chat_data[query.message.chat.id] = {"category": category, "url": None}
@@ -86,11 +89,16 @@ def download_content(client, query):
     query.message.reply_text("🔄 جارٍ تنزيل الملف، يرجى الانتظار...")
     output_file = f"media_{request_id}.mp4"
     
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            percent = d['_percent_str'].strip()
+            query.message.reply_text(f"📊 تقدم التحميل: {percent}")
+
     ydl_opts = {
         "format": "bestvideo+bestaudio/best" if quality != "audio" else "bestaudio",
         "outtmpl": output_file,
         "quiet": False,
-        "progress_hooks": [lambda d: query.message.reply_text(f"📊 تقدم: {d['_percent_str']}") if d['status'] == 'downloading' else None]
+        "progress_hooks": [progress_hook]
     }
 
     try:
@@ -112,7 +120,7 @@ def download_content(client, query):
 # تحويل الصوت
 def convert_audio(input_file, output_file):
     try:
-        ffmpeg.input(input_file).output(output_file, acodec='libmp3lame').run(overwrite_output=True)
+        ffmpeg.input(input_file).output(output_file, format='mp3', acodec='libmp3lame', audio_bitrate='192k').run(overwrite_output=True)
     except Exception as e:
         print(f"❌ خطأ أثناء تحويل الصوت: {e}")
 
